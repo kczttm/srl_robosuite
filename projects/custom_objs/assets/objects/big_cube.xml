@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="big_cube">
+    <asset>
+        <texture file="../models/assets/textures/metal.png" type="cube" name="metal" />
+        <material name="MatMetal" texture="metal" specular="1" shininess="0.3" rgba="0.8 0.8 0.8 1" />
+    </asset>
+  
+    <worldbody>
+        <body>
+            <body name="object">
+                <inertial pos="0 0 0" mass="15.0" diaginertia="0.1 0.1 0.2"/>
+                
+                <!-- Main cube body - depth (x), width (y), height (z) -->
+                <geom name="cube" type="box" size="0.15 0.15 0.2" material="MatMetal" group="0"/>
+            </body>
+            <!-- Reference sites for placement -->
+            <site rgba="0 0 0 0" size="0.005" pos="0 0 -0.1" name="bottom_site"/>
+            <site rgba="0 0 0 0" size="0.005" pos="0 0 0.1" name="top_site"/>
+            <site rgba="0 0 0 0" size="0.15" pos="0 0 0" name="horizontal_radius_site"/>
+        </body>
+    
+    </worldbody>
+</mujoco>

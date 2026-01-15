@@ -1,0 +1,62 @@
+<mujoco model="pot_visual">
+    <asset>
+        <!-- RGBA materials for transparency - no textures needed -->
+        <material name="pot_rgba" rgba="1.0 0.3 0.3 0.1" specular="0.4" shininess="0.1" />
+        <material name="handle0_rgba" rgba="0.3 1.0 0.3 0.1" specular="0.4" shininess="0.1" />
+        <material name="handle1_rgba" rgba="0.3 0.3 1.0 0.1" specular="0.4" shininess="0.1" />
+    </asset>
+    
+    <worldbody>
+        <body>
+            <body name="object">
+                <!-- Pot base -->
+                <geom name="base" type="box" size="0.07 0.10 0.005" pos="0 0 -0.065" 
+                      material="pot_rgba" group="1" conaffinity="0" contype="0"/>
+                
+                <!-- Pot walls -->
+                <!-- Front wall -->
+                <geom name="body0" type="box" size="0.005 0.10 0.10" pos="-0.065 0 0" 
+                      material="pot_rgba" group="1" conaffinity="0" contype="0"/>
+                <!-- Left wall -->
+                <geom name="body1" type="box" size="0.07 0.005 0.10" pos="0 -0.095 0" 
+                      material="pot_rgba" group="1" conaffinity="0" contype="0"/>
+                <!-- Back wall -->
+                <geom name="body2" type="box" size="0.005 0.10 0.10" pos="0.065 0 0" 
+                      material="pot_rgba" group="1" conaffinity="0" contype="0"/>
+                <!-- Right wall -->
+                <geom name="body3" type="box" size="0.07 0.005 0.10" pos="0 0.095 0" 
+                      material="pot_rgba" group="1" conaffinity="0" contype="0"/>
+                
+                <!-- Handle 0 (Green) - Right side -->
+                <!-- Center bar -->
+                <geom name="handle0_c" type="box" size="0.055 0.01 0.01" pos="0 0.19 0.09" 
+                      material="handle0_rgba" group="1" conaffinity="0" contype="0"/>
+                <!-- Side bars -->
+                <geom name="handle0_-" type="box" size="0.01 0.045 0.01" pos="-0.045 0.142 0.09" 
+                      material="handle0_rgba" group="1" conaffinity="0" contype="0"/>
+                <geom name="handle0_+" type="box" size="0.01 0.045 0.01" pos="0.045 0.142 0.09" 
+                      material="handle0_rgba" group="1" conaffinity="0" contype="0"/>
+                
+                <!-- Handle 1 (Blue) - Left side -->
+                <!-- Center bar -->
+                <geom name="handle1_c" type="box" size="0.055 0.01 0.01" pos="0 -0.19 0.09" 
+                      material="handle1_rgba" group="1" conaffinity="0" contype="0"/>
+                <!-- Side bars -->
+                <geom name="handle1_-" type="box" size="0.01 0.045 0.01" pos="-0.045 -0.142 0.09" 
+                      material="handle1_rgba" group="1" conaffinity="0" contype="0"/>
+                <geom name="handle1_+" type="box" size="0.01 0.045 0.01" pos="0.045 -0.142 0.09" 
+                      material="handle1_rgba" group="1" conaffinity="0" contype="0"/>
+                
+                <!-- Important sites -->
+                <site name="handle0" pos="0 0.158 0.06" size="0.005" rgba="0.3 1.0 0.3 0.6"/>
+                <site name="handle1" pos="0 -0.158 0.06" size="0.005" rgba="0.3 0.3 1.0 0.6"/>
+                <site name="center" pos="0 0 0" size="0.005" rgba="1.0 0.3 0.3 0.6"/>
+                
+                <!-- Reference sites for placement -->
+                <site name="bottom_site" pos="0 0 -0.07" rgba="0 0 0 0" size="0.005"/>
+                <site name="top_site" pos="0 0 0.07" rgba="0 0 0 0" size="0.005"/>
+                <site name="horizontal_radius_site" pos="0 0 0" rgba="0 0 0 0" size="0.2"/>
+            </body>
+        </body>
+    </worldbody>
+</mujoco>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Robot Teleoperation Video Stream</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        video {
+            width: 80%;
+            max-width: 640px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            background-color: #000;
+        }
+        button {
+            padding: 15px 30px;
+            margin: 15px 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .start-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .start-btn:hover {
+            background-color: #45a049;
+        }
+        .stop-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .stop-btn:hover {
+            background-color: #da190b;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background-color: #e8f4f8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .info h3 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Robot Teleoperation Video Stream</h1>
+
+        <div class="info">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Make sure the robot teleoperation demo is running on the server</li>
+                <li>Click "Start Stream" to begin video streaming</li>
+                <li>Connect your XR device to start controlling the robot</li>
+                <li>The video stream shows the robot's camera view in real-time</li>
+            </ol>
+        </div>
+
+        <div class="info">
+            <h3>Server Configuration:</h3>
+            <label for="serverUrl">Server URL:</label>
+            <input type="text" id="serverUrl" value="localhost:8080" placeholder="e.g., localhost:8080" style="margin: 5px; padding: 8px; width: 200px; border: 1px solid #ccc; border-radius: 3px;">
+        </div>
+
+        <div id="status" class="status disconnected">Status: Not Connected</div>
+
+        <video id="video" autoplay playsinline muted>
+            <p>Your browser doesn't support HTML5 video.</p>
+        </video><br>
+
+        <button id="startBtn" class="start-btn" onclick="startStream()">Start Stream</button>
+        <button id="stopBtn" class="stop-btn" onclick="stopStream()">Stop Stream</button>
+
+        <div class="info">
+            <h3>Technical Details:</h3>
+            <p><strong>Server:</strong> <span id="serverInfo">localhost:8080</span></p>
+            <p><strong>Stream Format:</strong> WebRTC H.264</p>
+            <p><strong>Resolution:</strong> 640x480 @ 30fps</p>
+            <p><strong>Camera:</strong> Robot frontview</p>
+        </div>
+    </div>
+
+    <script>
+        let pc = null;
+        let video = document.getElementById('video');
+        let status = document.getElementById('status');
+        let startBtn = document.getElementById('startBtn');
+        let stopBtn = document.getElementById('stopBtn');
+
+        function updateStatus(message, isConnected) {
+            status.textContent = message;
+            status.className = `status ${isConnected ? 'connected' : 'disconnected'}`;
+        }
+
+        async function startStream() {
+            try {
+                updateStatus('Status: Connecting...', false);
+                startBtn.disabled = true;
+
+                // Create peer connection
+                pc = new RTCPeerConnection({
+                    iceServers: [{urls: 'stun:stun.l.google.com:19302'}]
+                });
+
+                // Handle incoming video stream
+                pc.ontrack = (event) => {
+                    console.log('Received video track');
+                    video.srcObject = event.streams[0];
+                    updateStatus('Status: Connected - Streaming Video', true);
+                };
+
+                // Handle connection state changes
+                pc.onconnectionstatechange = () => {
+                    console.log('Connection state:', pc.connectionState);
+                    if (pc.connectionState === 'connected') {
+                        updateStatus('Status: Connected - Streaming Video', true);
+                    } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+                        updateStatus('Status: Connection Lost', false);
+                    }
+                };
+
+                // Request video only
+                pc.addTransceiver('video', { direction: 'recvonly' });
+
+                // Create offer
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+
+                // Send offer to server
+                const serverUrl = document.getElementById('serverUrl').value.trim();
+                const fullUrl = serverUrl.startsWith('http') ? serverUrl : `http://${serverUrl}`;
+                const response = await fetch(`${fullUrl}/offer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sdp: pc.localDescription.sdp,
+                        type: pc.localDescription.type
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const answer = await response.json();
+                await pc.setRemoteDescription(new RTCSessionDescription(answer));
+
+                stopBtn.disabled = false;
+
+            } catch (error) {
+                console.error('Error starting stream:', error);
+                updateStatus('Status: Connection Failed - ' + error.message, false);
+                startBtn.disabled = false;
+            }
+        }
+
+        function stopStream() {
+            if (pc) {
+                pc.close();
+                pc = null;
+            }
+            video.srcObject = null;
+            updateStatus('Status: Disconnected', false);
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+
+        // Initialize UI
+        stopBtn.disabled = true;
+
+        // Update server info display when URL changes
+        function updateServerInfo() {
+            const serverUrl = document.getElementById('serverUrl').value.trim();
+            document.getElementById('serverInfo').textContent = serverUrl;
+        }
+        
+        // Initialize and listen for changes
+        updateServerInfo();
+        document.getElementById('serverUrl').addEventListener('input', updateServerInfo);
+
+        // Handle page unload
+        window.addEventListener('beforeunload', stopStream);
+    </script>
+</body>
+</html>

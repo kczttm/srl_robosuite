@@ -1,0 +1,62 @@
+[project]
+name = "srl_robosuite"
+version = "0.0.1"
+description = "SRL Extension of Robosuite for Robot Learning"
+authors = ["Safe Robotics Lab at Georgia Tech"]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+# Python 3.10 is selected for compatibility with Kortex API and various ML tools
+python = "3.10.*" 
+# Pinocchio provided via conda is more stable than pip wheels
+pinocchio = "*"
+# Numpy < 2.0 required for compatibility with many robotics libraries
+numpy = "<2.0"
+scipy = ">=1.8.0"
+h5py = "*"
+ffmpeg = "*"
+git = "*"
+jupyterlab = "*"
+
+[pypi-dependencies]
+# Core dependencies
+mujoco = ">=3.2.3"
+mink = ">=0.0.5"
+numba = ">=0.49.1"
+opencv-python = "*"
+pynput = "*"
+termcolor = "*"
+tqdm = "*"
+Pillow = "*"
+
+# Visualization & Logging
+matplotlib = "*"
+meshcat = "*"
+imageio = "*"
+imageio-ffmpeg = "*"
+logging-mp = "*"
+colorlog = "*"
+
+# Web/Networking
+aiortc = "*"
+xr-robot-teleop-server = "*"
+
+# Data & Robot Utils
+pandas = "*"
+robosuite-models = "==1.0.0"
+robosuite = "*"
+usd-core = "*"
+pyserial = ">=3.5,<4"
+
+# Kortex API (Kinova) - Requires specific protobuf version
+protobuf = "==3.20.0"
+deprecated = "==1.2.7"
+wrapt = "*"
+kortex-api = { url = "https://artifactory.kinovaapps.com/artifactory/generic-public/kortex/API/2.6.0/kortex_api-2.6.0.post3-py3-none-any.whl" }
+
+# MediaPipe (for camera teleop)
+mediapipe = "*"
+
+# Install current package in editable mode
+srl_robosuite = { path = ".", editable = true }

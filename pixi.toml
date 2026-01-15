@@ -1,4 +1,4 @@
-[project]
+[workspace]
 name = "srl_robosuite"
 version = "0.0.1"
 description = "SRL Extension of Robosuite for Robot Learning"
@@ -50,7 +50,7 @@ usd-core = "*"
 pyserial = ">=3.5,<4"
 
 # Kortex API (Kinova) - Requires specific protobuf version
-protobuf = "==3.20.0"
+protobuf = "==3.5.1"
 deprecated = "==1.2.7"
 wrapt = "*"
 kortex-api = { url = "https://artifactory.kinovaapps.com/artifactory/generic-public/kortex/API/2.6.0/kortex_api-2.6.0.post3-py3-none-any.whl" }

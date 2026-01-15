@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "srl_robosuite"
+version = "0.0.1"
+description = "SRL Extension of Robosuite for Robot Learning"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Safe Robotics Lab at Georgia Tech" }]
+license = { text = "MIT" }
+
+# These are the PyPI dependencies required by your package code.
+# Note: Complex dependencies like 'pinocchio' and 'kortex-api' are managed 
+# by pixi.toml to ensure binary compatibility.
+dependencies = [
+  "numpy<2.0",
+  "scipy>=1.8.0",
+  "mujoco>=3.2.3",
+  "mink>=0.0.5",
+  "numba>=0.49.1",
+  "opencv-python",
+  "Pillow",
+  "pynput",
+  "termcolor",
+  "tqdm",
+  "h5py",
+  "mediapipe",
+  "pandas",
+  "pyserial>=3.5",
+  "robosuite",
+  "robosuite-models==1.0.0",
+  "xr-robot-teleop-server",
+  "aiortc"
+]
+
+[project.urls]
+Homepage = "https://github.com/kczttm/srl_robosuite"
+
+[project.optional-dependencies]
+test = ["pytest"]
+dev = ["jupyterlab", "black", "isort"]
+
+[tool.setuptools]
+# Automatically find the 'projects' package
+packages = ["projects"]
+
+[tool.setuptools.package-data]
+# Include any data files inside the packages
+"*" = ["*.xml", "*.stl", "*.h5", "*.txt"]

@@ -89,15 +89,15 @@ import os
 if __name__ == "__main__":
     # Get the path of robosuite
     repo_path = os.path.abspath(
-        os.path.join(os.path.abspath(__file__), os.pardir, os.pardir, os.pardir, os.pardir)
+        os.path.join(os.path.abspath(__file__), os.pardir, os.pardir, os.pardir)
     )
     # Mink path
     mink_controller_path = os.path.join(
-        repo_path, "SEW-Geometric-Teleop", "projects", "dual_kinova3_teleop", "controllers", "config", "robots", "dualkinova3_mink_ik.json"
+        repo_path, "projects", "dual_kinova3_teleop", "controllers", "config", "robots", "dualkinova3_mink_ik.json"
     )
     # OSC path
     osc_controller_path = os.path.join(
-        repo_path, "SEW-Geometric-Teleop", "projects", "dual_kinova3_teleop", "controllers", "config", "robots", "dualkinova3_osc.json"
+        repo_path, "projects", "dual_kinova3_teleop", "controllers", "config", "robots", "dualkinova3_osc.json"
     )
 
     parser = argparse.ArgumentParser()
@@ -166,7 +166,7 @@ if __name__ == "__main__":
 
     # initialize device
     if args.device == "Mediapipe":
-        from projects.shared_devices.mediapipe_teleop_device_robosuite_ver import MediaPipeTeleop
+        from projects.shared_devices.mediapipe_teleop_robosuite_wrapper import MediaPipeTeleop
 
         device = MediaPipeTeleop(env=env, 
                                  camera_id=args.camera_id, 

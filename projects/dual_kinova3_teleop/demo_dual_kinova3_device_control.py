@@ -97,8 +97,8 @@ import numpy as np
 import os
 
 # get the path of robosuite
-repo_path = os.path.abspath(os.path.join(os.path.abspath(__file__), os.pardir, os.pardir, os.pardir, os.pardir))
-dual_kinova3_osc_config_path = os.path.join(repo_path, "SEW-Geometric-Teleop", "projects", "dual_kinova3_teleop", "controllers", "config", "robots", "dualkinova3_osc_geo.json")
+repo_path = os.path.abspath(os.path.join(os.path.abspath(__file__), os.pardir, os.pardir, os.pardir))
+dual_kinova3_osc_config_path = os.path.join(repo_path, "projects", "dual_kinova3_teleop", "controllers", "config", "robots", "dualkinova3_osc_geo.json")
 
 import robosuite as suite
 from robosuite import load_composite_controller_config

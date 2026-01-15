@@ -5,12 +5,8 @@ Demo script for dual Kinova3 robot teleoperation using human pose estimation.
 
 This script demonstrates how to use MediaPipe human pose estimation to control
 dual Kinova3 robots via SEW (Shoulder, Elbow, Wrist) mimicking. The human's arm
-<<<<<<< HEAD:robosuite/projects/dual_kinova3_teleop/demo_dual_kinova3_mediapipe_teleop.py
 movements are captured via webcam and translated to robot arm movements using
 body-centric coordinate extraction and inverse kinematics.
-=======
-movements are captured via body-centric coordinate extraction and inverse kinematics.
->>>>>>> main:projects/dual_kinova3_teleop/demo_dual_kinova3_mediapipe_teleop.py
 
 Usage:
     python demo_dual_kinova3_software_human_pose_teleop.py [options]

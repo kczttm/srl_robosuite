@@ -338,7 +338,7 @@ def main():
                 print(f"Arriving at the inital state")
                 
                 # begin Koopman rollout
-                playback_device.begin_koopman_rollout()
+                playback_device.begin_koopman_rollout(save_path)
 
             else:
                 action_vector = robot.create_action_vector(action_dict)

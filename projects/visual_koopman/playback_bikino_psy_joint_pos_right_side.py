@@ -13,9 +13,10 @@ import mujoco
 import robosuite as suite
 from robosuite import load_composite_controller_config
 from robosuite.wrappers import VisualizationWrapper
-
+import yaml
 # Import the reader device
 from projects.shared_devices.koopman_bikino_psy_right_side_joint_pos_reader_device import KoopmanBiKinoPsyRightSideJointPosReaderDevice
+from projects.visual_koopman.process_image import load_auencoders, process_camera_image
 
 # Import Hand Controller
 # from projects.psyonic_hand_teleop.ability_hand.ability_hand_controller import AbilityHandController
@@ -25,6 +26,10 @@ from projects.psyonic_hand_teleop.ability_hand.dual_kinova3_robot_psyonic_grippe
 
 # Register custom environments
 import projects.experiment_envs
+from PIL import Image
+import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use("TkAgg")   # headless safe
 
 def get_repo_path():
     return os.path.abspath(
@@ -203,9 +208,30 @@ def map_6dof_hand_to_10dof_sim(hand_pos_6dof):
 def main():
     parser = argparse.ArgumentParser(description="Playback Dual Kinova3 + Psyonic Right Side Joint Positions")
     parser.add_argument("--environment", type=str, default="Lift", help="Environment to use")
-    parser.add_argument("--npy_file", type=str, default="projects/data/action.npy", help="Path to .npy file with joint positions")
+    parser.add_argument("--initial_state_path", type=str, default="projects/data/action.npy", help="Path to .npy file with initial robot states")
+    parser.add_argument("--Koopman_model_dir", type=str, default="projects/data/action.npy", help="Path to the trained Koopman model")
+    parser.add_argument("--autoencoder_model_dir", type=str, default="projects/data/action.npy", help="Path to the trained autoencoder model")
     parser.add_argument("--loop", action="store_true", help="Loop playback")
     args = parser.parse_args()
+
+    test_image_path = "/home/yhan389/Desktop/Visual_Koopman/Visual_KODex/Hardware_tasks/cloth_uncovering_processed/images/13/349.png"
+    autoencoder_model_dir = args.autoencoder_model_dir
+
+    # Define and load the pre-trained autoencoders
+    with open(os.path.join(autoencoder_model_dir, "autoencoder_config.yaml"), "r") as file:
+        autoencoder_config = yaml.safe_load(file)
+    
+    flow_autoencoder = load_auencoders(autoencoder_config, os.path.join(autoencoder_model_dir, "final_model.pth"))
+    num_flow = 256
+    object_label = "a grey small cloth"
+    object_grid_size = 50
+    save_path = f"koopman_inferece/cloth_uncovering"
+
+    # read the image and run the SAM3 and Co-tracker to estimate the flow points
+    img = Image.open(test_image_path) 
+    img = img.convert("RGB") # optional but often useful
+
+    unscaled_initial_flow_feature = process_camera_image(img, autoencoder_config, flow_autoencoder, num_flow, object_label, object_grid_size, save_path)
 
     print("Creating environment...")
     env = create_environment(args)
@@ -223,11 +249,16 @@ def main():
     model = env.sim.model._model
     data = env.sim.data._data
     
+    initial_state = np.load(args.initial_state_path)
+    Koopman_model_dir = args.Koopman_model_dir
+    
     # Initialize Reader Device
-    print(f"Initializing playback device with {args.npy_file}...")
     playback_device = KoopmanBiKinoPsyRightSideJointPosReaderDevice(
-        npy_path=args.npy_file, 
+        initial_state=initial_state, 
+        Koopman_model_dir=Koopman_model_dir,
+        unscaled_initial_flow_feature=unscaled_initial_flow_feature,
         frequency=30, 
+        finger_rad = True,
         loop=args.loop
     )
     
@@ -293,12 +324,28 @@ def main():
             action_dict['right_gripper'] = right_hand_goals
             action_dict['left_gripper'] = np.zeros(10)
             
-            # Step environment
-            action_vector = robot.create_action_vector(action_dict)
-            env.step(action_vector)
-            
-            # Sync viewer and maintain framerate
-            viewer.sync()
+            # Step enviroment
+            if step_count == 0:
+                for _ in range(100):
+                    action_vector = robot.create_action_vector(action_dict)
+                    env.step(action_vector)
+                    
+                    # Sync viewer and maintain framerate
+                    viewer.sync()
+                    time.sleep(0.01)
+                
+                # arriving at the initial state
+                print(f"Arriving at the inital state")
+                
+                # begin Koopman rollout
+                playback_device.begin_koopman_rollout()
+
+            else:
+                action_vector = robot.create_action_vector(action_dict)
+                env.step(action_vector)
+                
+                # Sync viewer and maintain framerate
+                viewer.sync()
 
             # Sync to 30Hz
             elapsed = time.time() - t_now
@@ -316,3 +363,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

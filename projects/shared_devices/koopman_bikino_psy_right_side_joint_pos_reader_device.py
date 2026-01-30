@@ -15,23 +15,157 @@ import matplotlib.pyplot as plt
 import numpy as np
 import math
 
-def visualize_and_confirm(data, save_path="figure.png"):
+def compare_fk_trajectory(sim, pred_qpos_traj, body_name, save_path="figure.png", gt_qpos_traj = None):
+    """
+    Compute EE pose trajectory for a sequence of joint angles.
+
+    sim         : robosuite sim object
+    qpos_traj   : numpy array of shape (T, nq)
+    body_name   : name of the body for FK (e.g., 'gripper0_right_eef')
+    """
+
+    # Save original simulation state 
+    original_state = sim.get_state()
+
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+
+    # data shape: (maximum_step, 13)
+    num_features = 7
+    robot_state_name = (
+        [f'pos {i}' for i in range(1, 4)] + [f'quat {i}' for i in range(1, 5)]
+    )
+
+    cols = 3
+    rows = math.ceil(num_features / cols)
+    fig, axes = plt.subplots(rows, cols, figsize=(3*cols, 2.5*rows), sharex=True) 
+    axes = axes.flatten() # make indexing easy
+
+    T = pred_qpos_traj.shape[0]
+
+    pos_traj = np.zeros((T, 3))
+    rot_traj = np.zeros((T, 3, 3))
+    quat_traj = np.zeros((T, 4))
+
+    body_id = sim.model.body_name2id(body_name)
+
+    for t in range(T):
+        # Set joint configuration
+        sim.data.qpos[:7] = pred_qpos_traj[t,:7]
+        sim.forward()
+
+        # Extract pose
+        pos_traj[t] = sim.data.body_xpos[body_id].copy()
+        rot_traj[t] = sim.data.body_xmat[body_id].reshape(3, 3).copy()
+        quat_traj[t] = sim.data.body_xquat[body_id].copy()
+
+    plot_traj = np.concatenate([pos_traj, quat_traj], axis=1)
+
+    for i in range(num_features):
+        axes[i].plot(
+            plot_traj[:, i],  # finger joints in deg
+            color="tab:blue",
+            lw=1.8,
+            label="Pred" if i == 0 else None,
+        )
+
+        axes[i].set_ylabel(f"value {i}", fontsize=9)
+        axes[i].set_title(robot_state_name[i], fontsize=8)
+        axes[i].grid(True, alpha=0.3)
+
+    if gt_qpos_traj is not None:
+        T = gt_qpos_traj.shape[0]
+
+        pos_traj = np.zeros((T, 3))
+        rot_traj = np.zeros((T, 3, 3))
+        quat_traj = np.zeros((T, 4))
+
+        body_id = sim.model.body_name2id(body_name)
+
+        for t in range(T):
+            # Set joint configuration
+            sim.data.qpos[:7] = gt_qpos_traj[t,:7]
+            sim.forward()
+
+            # Extract pose
+            pos_traj[t] = sim.data.body_xpos[body_id].copy()
+            rot_traj[t] = sim.data.body_xmat[body_id].reshape(3, 3).copy()
+            quat_traj[t] = sim.data.body_xquat[body_id].copy()
+
+        plot_traj = np.concatenate([pos_traj, quat_traj], axis=1)
+
+        for i in range(num_features):
+            axes[i].plot(
+                plot_traj[:, i],  # finger joints in deg
+                color="tab:red",
+                lw=1.5,
+                alpha=0.7,
+                linestyle="--",
+                label="GT" if i == 0 else None,
+            )
+
+            axes[i].set_ylabel(f"value {i}", fontsize=9)
+            axes[i].set_title(robot_state_name[i], fontsize=8)
+            axes[i].grid(True, alpha=0.3)        
+
+    # show legend only once
+    axes[0].legend(fontsize=8, loc="upper right")
+
+    # Hide unused axes
+    for j in range(num_features, len(axes)):
+        axes[j].axis("off")
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches="tight")
+
+    # Restore original simulation state
+    sim.set_state(original_state) 
+    sim.forward()
+
+def visualize_and_confirm(data, save_path="figure.png", compare_GT_actions=None):
     # Ensure directory exists
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
 
     # data shape: (maximum_step, 13)
     num_features = data.shape[1] 
-    cols = 3 
+    robot_state_name = (
+        [f'robot state {i}' for i in range(1, num_features + 1)]
+    )
+    cols = 5 
     rows = math.ceil(num_features / cols)
-    fig, axes = plt.subplots(rows, cols, figsize=(15, 4 * rows), sharex=True) 
+    fig, axes = plt.subplots(rows, cols, figsize=(3*cols, 2.5*rows), sharex=True) 
     axes = axes.flatten() # make indexing easy
 
     for i in range(num_features):
-        axes[i].plot(data[:, i])
-        axes[i].set_ylabel(f"Joint angle{i}")
-        axes[i].grid(True)
+        axes[i].plot(
+            data[:, i],  # finger joints in deg
+            color="tab:blue",
+            lw=1.8,
+            label="Pred" if i == 0 else None,
+        )
+
+        if compare_GT_actions is not None:
+            axes[i].plot(
+                compare_GT_actions[:, i],
+                color="tab:red",
+                lw=1.5,
+                alpha=0.7,
+                linestyle="--",
+                label="GT" if i == 0 else None,
+            )
+
+        axes[i].set_ylabel(f"Joint {i}", fontsize=9)
+        axes[i].set_title(robot_state_name[i], fontsize=8)
+        axes[i].grid(True, alpha=0.3)
 
     axes[-1].set_xlabel("Joint")
+
+    # show legend only once
+    axes[0].legend(fontsize=8, loc="upper right")
+
+    # Hide unused axes
+    for j in range(num_features, len(axes)):
+        axes[j].axis("off")
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=300, bbox_inches="tight")
@@ -122,7 +256,7 @@ class KoopmanBiKinoPsyRightSideJointPosReaderDevice:
     - Columns 0-6: Right Arm Joint Positions (7 DOF)
     - Columns 7-12: Right Hand Joint Positions (6 DOF) - [Index, Middle, Ring, Pinky, ThumbFlex, ThumbRot] (Assumption)
     """
-    def __init__(self, initial_state, Koopman_model_dir, unscaled_initial_flow_feature, frequency=30.0, finger_rad = True, loop=False):
+    def __init__(self, initial_state, Koopman_model_dir, unscaled_initial_flow_feature, compare_GT_actions=None, frequency=30.0, finger_rad = True, loop=False):
         """
         Args:
             npy_path (str): Path to the .npy file containing joint data.
@@ -131,11 +265,15 @@ class KoopmanBiKinoPsyRightSideJointPosReaderDevice:
         """
         self.initial_state_rad = initial_state.copy()
         self.initial_state = initial_state
-        
+        self.compare_GT_actions = compare_GT_actions
+
         if finger_rad:
             self.initial_state[7:] = np.rad2deg(self.initial_state[7:])
-        
-        maximum_prediction = 150
+            if compare_GT_actions is not None:
+                self.compare_GT_actions[:, 7:] = np.rad2deg(self.compare_GT_actions[:, 7:])
+
+        # maximum_prediction = 160 # for cloth uncovering
+        maximum_prediction = 160 # for box opening
         self.num_samples = maximum_prediction
         self.frequency = frequency
         self.period = 1.0 / frequency
@@ -205,7 +343,7 @@ class KoopmanBiKinoPsyRightSideJointPosReaderDevice:
         self.current_idx = 0
         self.start_time = None
 
-    def begin_koopman_rollout(self, save_path):
+    def begin_koopman_rollout(self, save_path, env_sim, ee_name):
         Robot_OriState = self.initial_state_rad
 
         init_original_x = torch.from_numpy(np.concatenate([Robot_OriState, self.scaled_initial_flow_feature])).float().to("cpu")
@@ -223,5 +361,6 @@ class KoopmanBiKinoPsyRightSideJointPosReaderDevice:
 
         self.robot_action_pred = np.stack(self.robot_action_pred, axis=0)
         self.robot_action_pred[:, 7:] = np.rad2deg(self.robot_action_pred[:, 7:])
-
-        visualize_and_confirm(self.robot_action_pred, os.path.join(save_path, "robot_action_prediction.png"))
+        
+        compare_fk_trajectory(env_sim, self.robot_action_pred, ee_name, os.path.join(save_path, "end_effector_position.png"), self.compare_GT_actions)
+        visualize_and_confirm(self.robot_action_pred, os.path.join(save_path, "robot_action_prediction.png"), self.compare_GT_actions)

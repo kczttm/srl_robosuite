@@ -208,13 +208,23 @@ def map_6dof_hand_to_10dof_sim(hand_pos_6dof):
 def main():
     parser = argparse.ArgumentParser(description="Playback Dual Kinova3 + Psyonic Right Side Joint Positions")
     parser.add_argument("--environment", type=str, default="Lift", help="Environment to use")
+    # parser.add_argument("--inference_setting", type=str, required=True)
     parser.add_argument("--initial_state_path", type=str, default="projects/data/action.npy", help="Path to .npy file with initial robot states")
     parser.add_argument("--Koopman_model_dir", type=str, default="projects/data/action.npy", help="Path to the trained Koopman model")
     parser.add_argument("--autoencoder_model_dir", type=str, default="projects/data/action.npy", help="Path to the trained autoencoder model")
     parser.add_argument("--loop", action="store_true", help="Loop playback")
     args = parser.parse_args()
 
-    test_image_path = "/home/yhan389/Desktop/Visual_Koopman/Visual_KODex/Hardware_tasks/cloth_uncovering_processed/images/13/349.png"
+    # cloth uncovering task
+    # test_image_path = "/home/yhan389/Desktop/Visual_Koopman/Visual_KODex/Hardware_tasks/cloth_uncovering_processed_with_interpolation/images/27/702.png"
+    # compare_GT_actions_path = "/home/yhan389/Desktop/Visual_Koopman/Visual_KODex/Hardware_tasks/cloth_uncovering_processed_with_interpolation/actions/27/action.npy"
+
+    # box pushing task
+    test_image_path = "/home/yhan389/Desktop/Visual_Koopman/Visual_KODex/Hardware_tasks/box_processed_with_interpolation/images/3/325.png"
+    compare_GT_actions_path = "/home/yhan389/Desktop/Visual_Koopman/Visual_KODex/Hardware_tasks/box_processed_with_interpolation/actions/3/action.npy"
+
+    compare_GT_actions = np.load(compare_GT_actions_path)  # finger joints in rad
+
     autoencoder_model_dir = args.autoencoder_model_dir
 
     # Define and load the pre-trained autoencoders
@@ -223,9 +233,16 @@ def main():
     
     flow_autoencoder = load_auencoders(autoencoder_config, os.path.join(autoencoder_model_dir, "final_model.pth"))
     num_flow = 256
-    object_label = "a grey small cloth"
+    
+    # cloth uncovering task
+    # object_label = "a grey small cloth"
+    # object_grid_size = 50
+    # save_path = f"koopman_inferece/cloth_uncovering"
+
+    # box pushing task
+    object_label = "a tool box"
     object_grid_size = 50
-    save_path = f"koopman_inferece/cloth_uncovering"
+    save_path = f"koopman_inferece/box"
 
     # read the image and run the SAM3 and Co-tracker to estimate the flow points
     img = Image.open(test_image_path) 
@@ -248,7 +265,7 @@ def main():
     # Initialize Hand Controllers
     model = env.sim.model._model
     data = env.sim.data._data
-    
+
     initial_state = np.load(args.initial_state_path)
     Koopman_model_dir = args.Koopman_model_dir
     
@@ -257,6 +274,7 @@ def main():
         initial_state=initial_state, 
         Koopman_model_dir=Koopman_model_dir,
         unscaled_initial_flow_feature=unscaled_initial_flow_feature,
+        compare_GT_actions=compare_GT_actions,
         frequency=30, 
         finger_rad = True,
         loop=args.loop
@@ -338,7 +356,7 @@ def main():
                 print(f"Arriving at the inital state")
                 
                 # begin Koopman rollout
-                playback_device.begin_koopman_rollout(save_path)
+                playback_device.begin_koopman_rollout(save_path, env.sim, 'robot0_right_end_effector')
 
             else:
                 action_vector = robot.create_action_vector(action_dict)
